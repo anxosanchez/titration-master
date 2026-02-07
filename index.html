@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Titration Master | Virtual Chemistry Lab</title>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Outfit:wght@500;700&display=swap"
+        rel="stylesheet">
+    <!-- Chart.js and Plugins via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1"></script>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --surface-color: rgba(30, 41, 59, 0.7);
+            --accent-color: #38bdf8;
+            --text-color: #f1f5f9;
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --danger: #ef4444;
+            --success: #22c55e;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            background-image:
+                radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            padding: 1.5rem 2rem;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
+            color: var(--accent-color);
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 280px 1fr 280px;
+            /* Slimmer sidebars */
+            gap: 1.5rem;
+            padding: 1rem 1.5rem;
+            flex-grow: 1;
+        }
+
+        .card {
+            background: var(--surface-color);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        /* Sidebar Controls */
+        .controls h2 {
+            font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .control-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .control-group label {
+            display: block;
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+            color: #94a3b8;
+        }
+
+        select,
+        input[type="range"] {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--glass-border);
+            color: white;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            outline: none;
+        }
+
+        .slider-value {
+            float: right;
+            color: var(--accent-color);
+            font-weight: 600;
+        }
+
+        .branding {
+            margin-top: auto;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--glass-border);
+            text-align: center;
+            font-size: 0.8rem;
+            color: #94a3b8;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .branding i {
+            font-size: 1.2rem;
+        }
+
+        /* Main View */
+        .main-chart {
+            padding: 1rem !important;
+            /* Slightly less padding */
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chart-container {
+            position: relative;
+            flex-grow: 1;
+            min-height: 550px;
+            width: 100%;
+        }
+
+        /* Right Panel - Lab Equipment */
+        .lab-view {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .beaker-container {
+            position: relative;
+            width: 150px;
+            height: 200px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: none;
+            border-radius: 0 0 20px 20px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .liquid {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 60%;
+            background: rgba(255, 255, 255, 0.8);
+            transition: background 0.3s ease, height 0.5s ease;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .buret {
+            width: 20px;
+            height: 150px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            position: relative;
+        }
+
+        .buret::after {
+            content: '';
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            width: 100%;
+        }
+
+        .stat-card {
+            background: rgba(15, 23, 42, 0.4);
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #94a3b8;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--accent-color);
+        }
+
+        .mode-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: rgba(56, 189, 248, 0.1);
+            color: var(--accent-color);
+            border: 1px solid var(--accent-color);
+        }
+
+        @media (max-width: 1100px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+
+            .controls,
+            .lab-view {
+                order: 2;
+            }
+
+            .main-chart {
+                order: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <i class="fas fa-flask-vial fa-2x" style="color: var(--accent-color)"></i>
+            <h1>Mestre de Valoración</h1>
+        </div>
+        <div id="game-mode-display" class="mode-badge">EXPLORACIÓN LIBRE</div>
+    </header>
+
+    <div id="success-overlay"
+        style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15, 23, 42, 0.95); padding: 2.5rem; border-radius: 1.5rem; border: 2px solid var(--success); box-shadow: 0 0 50px rgba(34, 197, 94, 0.4); z-index: 1000; text-align: center; backdrop-filter: blur(20px);">
+        <i class="fas fa-trophy fa-4x" style="color: var(--success); margin-bottom: 1rem;"></i>
+        <h2 style="font-family: 'Outfit', sans-serif; color: white; font-size: 2rem;">Desafío Completado!</h2>
+        <p id="success-msg" style="color: #94a3b8; margin: 1rem 0 2rem;">Deseñaches o tampón con éxito.</p>
+        <button onclick="document.getElementById('success-overlay').style.display='none'"
+            style="background: var(--success); color: white; border: none; padding: 0.75rem 2rem; border-radius: 0.5rem; font-weight: 700; cursor: pointer;">Xenial!</button>
+    </div>
+
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="card controls" style="display: flex; flex-direction: column;">
+            <h2><i class="fas fa-sliders"></i> Configuración</h2>
+
+            <div class="control-group">
+                <label>MODO DE LABORATORIO</label>
+                <select id="mode-select">
+                    <option value="free">Exploración Libre</option>
+                    <option value="mystery">Ácido Misterioso</option>
+                    <option value="buffer">Deseño de Tampón</option>
+                </select>
+            </div>
+
+            <div class="control-group" id="acid-select-group">
+                <label>SELECCIONAR ÁCIDO</label>
+                <select id="acid-select"></select>
+            </div>
+
+            <div class="control-group">
+                <label>CONC. DO ÁCIDO ($C_a$)</label>
+                <input type="range" id="酸-conc" min="0.01" max="1.0" step="0.01" value="0.1">
+                <span class="slider-value" id="酸-conc-val">0.10 M</span>
+            </div>
+
+            <div class="control-group">
+                <label>VOLUME DO ÁCIDO ($V_a$)</label>
+                <input type="range" id="酸-vol" min="10" max="100" step="5" value="25">
+                <span class="slider-value" id="酸-vol-val">25 mL</span>
+            </div>
+
+            <div class="control-group">
+                <label>CONC. DO VALORANTE (NaOH) ($C_b$)</label>
+                <input type="range" id="base-conc" min="0.01" max="1.0" step="0.01" value="0.1">
+                <span class="slider-value" id="base-conc-val">0.10 M</span>
+            </div>
+
+            <div class="control-group">
+                <label>INDICADOR</label>
+                <select id="indicator-select"></select>
+            </div>
+
+            <button id="reset-btn"
+                style="width: 100%; padding: 0.75rem; background: var(--danger); border: none; border-radius: 0.5rem; color: white; font-weight: 600; cursor: pointer; margin-top: 1rem; opacity: 0.8; transition: 0.3s">
+                <i class="fas fa-redo"></i> Reiniciar Lab
+            </button>
+
+            <div class="branding">
+                <i class="fab fa-creative-commons"></i>
+                <span>(c) Anxo Sánchez (2026)</span>
+            </div>
+        </aside>
+
+        <!-- Main Chart -->
+        <main class="card main-chart">
+            <div class="chart-container">
+                <canvas id="titrationChart"></canvas>
+            </div>
+        </main>
+
+        <!-- Lab View -->
+        <aside class="card lab-view">
+            <h2><i class="fas fa-microscope"></i> Vista en Vivo</h2>
+
+            <div class="buret"></div>
+
+            <div class="beaker-container">
+                <div id="liquid" class="liquid"></div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">pH ACTUAL</div>
+                    <div id="ph-display" class="stat-value">--</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">$V_{base}$ engadido</div>
+                    <div id="vbase-display" class="stat-value">--</div>
+                </div>
+                <div class="stat-card" style="grid-column: span 2">
+                    <div class="stat-label">IDENTIFICADO COMO</div>
+                    <div id="id-display" class="stat-value">--</div>
+                </div>
+            </div>
+
+            <div style="width: 100%; margin-top: 1rem;">
+                <label style="font-size: 0.7rem; color: #94a3b8;">PROGRESO DA VALORACIÓN</label>
+                <input type="range" id="titration-progress" min="0" max="100" step="0.1" value="0"
+                    style="margin-top: 0.5rem;">
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        // --- CONSTANTS ---
+        const ACIDS = [
+            { name: "Ácido Clorhídrico", formula: "HCl", pKa1: -2, pKa2: null, strong: true },
+            { name: "Ácido Acético", formula: "CH3COOH", pKa1: 4.76, pKa2: null },
+            { name: "Ácido Fórmico", formula: "HCOOH", pKa1: 3.75, pKa2: null },
+            { name: "Ácido Sulfúrico", formula: "H2SO4", pKa1: -2, pKa2: 1.99 },
+            { name: "Ácido Carbónico", formula: "H2CO3", pKa1: 6.35, pKa2: 10.33 },
+            { name: "Ácido Oxálico", formula: "H2C2O4", pKa1: 1.25, pKa2: 4.14 },
+            { name: "Ácido Fosfórico", formula: "H3PO4", pKa1: 2.12, pKa2: 7.21, pKa3: 12.32 }
+        ];
+
+        const INDICATORS = [
+            { name: "Fenolftaleína", range: [8.2, 10.0], acidColor: [255, 255, 255], baseColor: [255, 0, 128] },
+            { name: "Alaranxado de Metilo", range: [3.1, 4.4], acidColor: [255, 0, 0], baseColor: [255, 255, 0] },
+            { name: "Azul de Bromotimol", range: [6.0, 7.6], acidColor: [255, 255, 0], baseColor: [0, 0, 255] },
+            { name: "Tornasol", range: [4.5, 8.3], acidColor: [255, 0, 0], baseColor: [0, 0, 255] }
+        ];
+
+        // --- STATE ---
+        let state = {
+            mode: 'free',
+            selectedAcid: ACIDS[0],
+            selectedIndicator: INDICATORS[0],
+            Ca: 0.1,
+            Va: 25,
+            Cb: 0.1,
+            progress: 0,
+            curve: [],
+            equivPoints: [],
+            mysteryAcid: null,
+            targetPH: 7,
+            chart: null
+        };
+
+        // --- CHEMICAL ENGINE ---
+        function calculateCurve() {
+            const { Ca, Va, Cb, selectedAcid, mode, mysteryAcid } = state;
+            const acid = (mode === 'mystery') ? mysteryAcid : selectedAcid;
+
+            const Kw = 1e-14;
+            const pKa1 = acid.pKa1;
+            const pKa2 = acid.pKa2 || 20;
+
+            const Ka1 = Math.pow(10, -pKa1);
+            const Ka2 = Math.pow(10, -pKa2);
+
+            let data = [];
+            let lastDeriv = 0;
+            state.equivPoints = [];
+
+            // Inverse Method: Iterate pH from 0.5 to 13.5
+            for (let ph = 0.5; ph <= 13.5; ph += 0.02) {
+                const H = Math.pow(10, -ph);
+                const OH = Kw / H;
+                const delta = H - OH;
+
+                const denom = (H * H) + (Ka1 * H) + (Ka1 * Ka2);
+                const a1 = (Ka1 * H) / denom;
+                const a2 = (Ka1 * Ka2) / denom;
+
+                const num = Va * (Ca * (a1 + 2 * a2) - delta);
+                const den = Cb + delta;
+                const Vb = num / den;
+
+                if (Vb >= 0 && Vb <= 150) { // Max volume 150mL
+                    data.push({ x: parseFloat(Vb.toFixed(3)), y: parseFloat(ph.toFixed(2)) });
+                }
+            }
+
+            // Sort by Vb for Chart.js
+            state.curve = data.sort((a, b) => a.x - b.x);
+
+            // Find Equivalence Points (Simple derivative method)
+            for (let i = 2; i < state.curve.length - 2; i++) {
+                const p1 = state.curve[i - 1];
+                const p2 = state.curve[i + 1];
+                const dV = p2.x - p1.x;
+                const dpH = p2.y - p1.y;
+                const deriv = dpH / dV;
+
+                if (deriv > 2 && deriv > lastDeriv && deriv > (dpH / dV)) {
+                    // Local maximum of derivative
+                    // Check if it's a significant jump
+                    if (state.equivPoints.length === 0 || Math.abs(state.curve[i].x - state.equivPoints[state.equivPoints.length - 1].x) > 5) {
+                        state.equivPoints.push(state.curve[i]);
+                    }
+                }
+                lastDeriv = deriv;
+            }
+        }
+
+        // --- COLOR LOGIC ---
+        function getIndicatorColor(ph) {
+            const ind = state.selectedIndicator;
+            const [min, max] = ind.range;
+            const pKin = (min + max) / 2;
+
+            // ratio = 1 / (1 + 10^(pKin - currentPH))
+            const ratio = 1 / (1 + Math.pow(10, pKin - ph));
+
+            const r = Math.round(ind.acidColor[0] * (1 - ratio) + ind.baseColor[0] * ratio);
+            const g = Math.round(ind.acidColor[1] * (1 - ratio) + ind.baseColor[1] * ratio);
+            const b = Math.round(ind.acidColor[2] * (1 - ratio) + ind.baseColor[2] * ratio);
+
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        // --- UI ACTIONS ---
+        function initChart() {
+            const ctx = document.getElementById('titrationChart').getContext('2d');
+            state.chart = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        {
+                            label: 'Titration Curve',
+                            data: [],
+                            showLine: true,
+                            borderColor: '#38bdf8',
+                            backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                            borderWidth: 3,
+                            pointRadius: 0,
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Equivalence Points',
+                            data: [],
+                            backgroundColor: '#ef4444',
+                            pointRadius: 6,
+                            pointHoverRadius: 8
+                        },
+                        {
+                            label: 'Current Point',
+                            data: [],
+                            backgroundColor: '#fff',
+                            borderColor: '#38bdf8',
+                            borderWidth: 2,
+                            pointRadius: 8,
+                            pointHoverRadius: 10,
+                            zIndex: 10
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Volume de Base (mL)', color: '#94a3b8' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            ticks: { color: '#94a3b8' },
+                            min: 0,
+                            max: 100
+                        },
+                        y: {
+                            title: { display: true, text: 'pH', color: '#94a3b8' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            ticks: { color: '#94a3b8' },
+                            min: 0,
+                            max: 14
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => `V: ${context.parsed.x} mL, pH: ${context.parsed.y}`
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateDisplay() {
+            calculateCurve();
+
+            // Find current data point based on progress
+            const maxV = state.curve[state.curve.length - 1].x;
+            const currentV = (state.progress / 100) * maxV;
+
+            let currentPoint = state.curve[0];
+            for (let pt of state.curve) {
+                if (pt.x <= currentV) currentPoint = pt;
+                else break;
+            }
+
+            // Update Labels
+            document.getElementById('ph-display').textContent = currentPoint.y.toFixed(2);
+            document.getElementById('vbase-display').textContent = currentPoint.x.toFixed(1) + " mL";
+
+            // Update Beaker
+            const liquid = document.getElementById('liquid');
+            const color = getIndicatorColor(currentPoint.y);
+            liquid.style.backgroundColor = color;
+            liquid.style.height = `${40 + (currentPoint.x / 1.5)}%`;
+
+            // Update Chart
+            state.chart.data.datasets[0].data = state.curve;
+            state.chart.data.datasets[1].data = state.equivPoints;
+            state.chart.data.datasets[2].data = [currentPoint];
+
+            // Update Indicator Range Band
+            const ind = state.selectedIndicator;
+            state.chart.options.plugins.annotation.annotations = {
+                box1: {
+                    type: 'box',
+                    yMin: ind.range[0],
+                    yMax: ind.range[1],
+                    backgroundColor: `rgba(${ind.baseColor.join(',')}, 0.08)`,
+                    borderColor: 'rgba(255,255,255,0.1)',
+                    borderWidth: 1,
+                    label: {
+                        display: true,
+                        content: `Transición de ${ind.name}`,
+                        position: 'start',
+                        color: '#94a3b8',
+                        font: { size: 10, weight: 'normal' }
+                    }
+                }
+            };
+
+            state.chart.options.scales.x.max = Math.max(100, Math.ceil(maxV / 10) * 10);
+            state.chart.update('none');
+
+            // Win Conditions
+            if (state.mode === 'buffer') {
+                const diff = Math.abs(currentPoint.y - state.targetPH);
+                const idDisplay = document.getElementById('id-display');
+                if (diff < 0.02) {
+                    idDisplay.textContent = "🎯 OBXECTIVO ALCANZADO!";
+                    idDisplay.style.color = "#22c55e";
+                    showSuccess("Tampón deseñado con éxito a pH " + state.targetPH);
+                } else {
+                    idDisplay.textContent = `DIFERENZA: ${diff.toFixed(2)}`;
+                    idDisplay.style.color = "#ef4444";
+                }
+            } else if (state.mode === 'mystery') {
+                document.getElementById('id-display').textContent = "???";
+                document.getElementById('id-display').style.color = "#94a3b8";
+            } else {
+                document.getElementById('id-display').textContent = state.selectedAcid.formula;
+                document.getElementById('id-display').style.color = "var(--accent-color)";
+            }
+        }
+
+        function showSuccess(msg) {
+            if (document.getElementById('success-overlay').style.display === 'block') return;
+            document.getElementById('success-msg').textContent = msg;
+            document.getElementById('success-overlay').style.display = 'block';
+        }
+
+        function switchMode(newMode) {
+            state.mode = newMode;
+            state.progress = 0;
+            document.getElementById('titration-progress').value = 0;
+
+            const badge = document.getElementById('game-mode-display');
+
+            const acidGroup = document.getElementById('acid-select-group');
+
+            if (newMode === 'mystery') {
+                badge.textContent = "ÁCIDO MISTERIOSO";
+                state.mysteryAcid = ACIDS[Math.floor(Math.random() * ACIDS.length)];
+                acidGroup.style.display = 'none';
+                badge.style.background = 'rgba(239, 68, 68, 0.1)';
+                badge.style.color = '#ef4444';
+                badge.style.borderColor = '#ef4444';
+            } else if (newMode === 'buffer') {
+                state.targetPH = (Math.random() * 4 + 4).toFixed(2);
+                badge.textContent = `OBXECTIVO pH: ${state.targetPH}`;
+                acidGroup.style.display = 'block';
+                badge.style.background = 'rgba(34, 197, 94, 0.1)';
+                badge.style.color = '#22c55e';
+                badge.style.borderColor = '#22c55e';
+            } else {
+                badge.textContent = "EXPLORACIÓN LIBRE";
+                acidGroup.style.display = 'block';
+                badge.style.background = 'rgba(56, 189, 248, 0.1)';
+                badge.style.color = 'var(--accent-color)';
+                badge.style.borderColor = 'var(--accent-color)';
+            }
+            updateDisplay();
+        }
+
+        // --- EVENT LISTENERS ---
+        window.onload = () => {
+            initChart();
+
+            // Setup Selects
+            const acidSelect = document.getElementById('acid-select');
+            ACIDS.forEach((a, i) => {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.textContent = `${a.name} (${a.formula})`;
+                acidSelect.appendChild(opt);
+            });
+
+            const indSelect = document.getElementById('indicator-select');
+            INDICATORS.forEach((ind, i) => {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.textContent = ind.name;
+                indSelect.appendChild(opt);
+            });
+
+            // Bind Events
+            document.getElementById('mode-select').onchange = (e) => switchMode(e.target.value);
+
+            document.getElementById('acid-select').onchange = (e) => {
+                state.selectedAcid = ACIDS[e.target.value];
+                updateDisplay();
+            };
+
+            document.getElementById('indicator-select').onchange = (e) => {
+                state.selectedIndicator = INDICATORS[e.target.value];
+                updateDisplay();
+            };
+
+            const sliders = [
+                { id: '酸-conc', key: 'Ca', unit: ' M' },
+                { id: '酸-vol', key: 'Va', unit: ' mL' },
+                { id: 'base-conc', key: 'Cb', unit: ' M' },
+                { id: 'titration-progress', key: 'progress', unit: '%' }
+            ];
+
+            sliders.forEach(s => {
+                const el = document.getElementById(s.id);
+                el.oninput = (e) => {
+                    const val = parseFloat(e.target.value);
+                    state[s.key] = val;
+                    const valDisplay = document.getElementById(s.id + '-val');
+                    if (valDisplay) valDisplay.textContent = val.toFixed(2) + s.unit;
+                    updateDisplay();
+                };
+            });
+
+            document.getElementById('reset-btn').onclick = () => {
+                state.progress = 0;
+                document.getElementById('titration-progress').value = 0;
+                updateDisplay();
+            };
+
+            // Initial view
+            updateDisplay();
+        };
+    </script>
+</body>
+
+</html>
