@@ -251,70 +251,76 @@
     <header>
         <div style="display: flex; align-items: center; gap: 1rem;">
             <i class="fas fa-flask-vial fa-2x" style="color: var(--accent-color)"></i>
-            <h1>Mestre de Valoración</h1>
+            <h1 id="app-title" data-i18n="title">Mestre de Valoración</h1>
         </div>
-        <div id="game-mode-display" class="mode-badge">EXPLORACIÓN LIBRE</div>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <div id="game-mode-display" class="mode-badge" data-i18n="free_mode">EXPLORACIÓN LIBRE</div>
+            <button id="lang-toggle" onclick="toggleLanguage()"
+                style="background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; transition: 0.3s; height: 38px;">
+                <span id="lang-flag">🇬🇧</span> <span id="lang-label">EN</span>
+            </button>
+        </div>
     </header>
 
     <div id="success-overlay"
         style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15, 23, 42, 0.95); padding: 2.5rem; border-radius: 1.5rem; border: 2px solid var(--success); box-shadow: 0 0 50px rgba(34, 197, 94, 0.4); z-index: 1000; text-align: center; backdrop-filter: blur(20px);">
         <i class="fas fa-trophy fa-4x" style="color: var(--success); margin-bottom: 1rem;"></i>
-        <h2 style="font-family: 'Outfit', sans-serif; color: white; font-size: 2rem;">Desafío Completado!</h2>
+        <h2 id="success-title" style="font-family: 'Outfit', sans-serif; color: white; font-size: 2rem;" data-i18n="success_title">Desafío Completado!</h2>
         <p id="success-msg" style="color: #94a3b8; margin: 1rem 0 2rem;">Deseñaches o tampón con éxito.</p>
-        <button onclick="document.getElementById('success-overlay').style.display='none'"
-            style="background: var(--success); color: white; border: none; padding: 0.75rem 2rem; border-radius: 0.5rem; font-weight: 700; cursor: pointer;">Xenial!</button>
+        <button id="success-close" onclick="document.getElementById('success-overlay').style.display='none'"
+            style="background: var(--success); color: white; border: none; padding: 0.75rem 2rem; border-radius: 0.5rem; font-weight: 700; cursor: pointer;" data-i18n="success_btn">Xenial!</button>
     </div>
 
     <div class="container">
         <!-- Sidebar -->
         <aside class="card controls" style="display: flex; flex-direction: column;">
-            <h2><i class="fas fa-sliders"></i> Configuración</h2>
+            <h2 data-i18n="config"><i class="fas fa-sliders"></i> Configuración</h2>
 
             <div class="control-group">
-                <label>MODO DE LABORATORIO</label>
+                <label data-i18n="lab_mode">MODO DE LABORATORIO</label>
                 <select id="mode-select">
-                    <option value="free">Exploración Libre</option>
-                    <option value="mystery">Ácido Misterioso</option>
-                    <option value="buffer">Deseño de Tampón</option>
+                    <option value="free" data-i18n="free_mode_opt">Exploración Libre</option>
+                    <option value="mystery" data-i18n="mystery_mode_opt">Ácido Misterioso</option>
+                    <option value="buffer" data-i18n="buffer_mode_opt">Deseño de Tampón</option>
                 </select>
             </div>
 
             <div class="control-group" id="acid-select-group">
-                <label>SELECCIONAR ÁCIDO</label>
+                <label data-i18n="select_acid">SELECCIONAR ÁCIDO</label>
                 <select id="acid-select"></select>
             </div>
 
             <div class="control-group">
-                <label>CONC. DO ÁCIDO ($C_a$)</label>
+                <label id="label-acid-conc" data-i18n="acid_conc">CONC. DO ÁCIDO ($C_a$)</label>
                 <input type="range" id="酸-conc" min="0.01" max="1.0" step="0.01" value="0.1">
                 <span class="slider-value" id="酸-conc-val">0.10 M</span>
             </div>
 
             <div class="control-group">
-                <label>VOLUME DO ÁCIDO ($V_a$)</label>
+                <label id="label-acid-vol" data-i18n="acid_vol">VOLUME DO ÁCIDO ($V_a$)</label>
                 <input type="range" id="酸-vol" min="10" max="100" step="5" value="25">
                 <span class="slider-value" id="酸-vol-val">25 mL</span>
             </div>
 
             <div class="control-group">
-                <label>CONC. DO VALORANTE (NaOH) ($C_b$)</label>
+                <label id="label-base-conc" data-i18n="base_conc">CONC. DO VALORANTE (NaOH) ($C_b$)</label>
                 <input type="range" id="base-conc" min="0.01" max="1.0" step="0.01" value="0.1">
                 <span class="slider-value" id="base-conc-val">0.10 M</span>
             </div>
 
             <div class="control-group">
-                <label>INDICADOR</label>
+                <label data-i18n="indicator">INDICADOR</label>
                 <select id="indicator-select"></select>
             </div>
 
             <button id="reset-btn"
                 style="width: 100%; padding: 0.75rem; background: var(--danger); border: none; border-radius: 0.5rem; color: white; font-weight: 600; cursor: pointer; margin-top: 1rem; opacity: 0.8; transition: 0.3s">
-                <i class="fas fa-redo"></i> Reiniciar Lab
+                <i class="fas fa-redo"></i> <span data-i18n="reset">Reiniciar Lab</span>
             </button>
 
             <div class="branding">
                 <i class="fab fa-creative-commons"></i>
-                <span>(c) Anxo Sánchez (2026)</span>
+                <span data-i18n="copyright">(c) Anxo Sánchez (2026)</span>
             </div>
         </aside>
 
@@ -327,7 +333,7 @@
 
         <!-- Lab View -->
         <aside class="card lab-view">
-            <h2><i class="fas fa-microscope"></i> Vista en Vivo</h2>
+            <h2 data-i18n="live_view"><i class="fas fa-microscope"></i> Vista en Vivo</h2>
 
             <div class="buret"></div>
 
@@ -337,21 +343,21 @@
 
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-label">pH ACTUAL</div>
+                    <div class="stat-label" data-i18n="ph_actual">pH ACTUAL</div>
                     <div id="ph-display" class="stat-value">--</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">$V_{base}$ engadido</div>
+                    <div class="stat-label" data-i18n="vbase_added">$V_{base}$ engadido</div>
                     <div id="vbase-display" class="stat-value">--</div>
                 </div>
                 <div class="stat-card" style="grid-column: span 2">
-                    <div class="stat-label">IDENTIFICADO COMO</div>
+                    <div class="stat-label" data-i18n="identified_as">IDENTIFICADO COMO</div>
                     <div id="id-display" class="stat-value">--</div>
                 </div>
             </div>
 
             <div style="width: 100%; margin-top: 1rem;">
-                <label style="font-size: 0.7rem; color: #94a3b8;">PROGRESO DA VALORACIÓN</label>
+                <label style="font-size: 0.7rem; color: #94a3b8;" data-i18n="progress">PROGRESO DA VALORACIÓN</label>
                 <input type="range" id="titration-progress" min="0" max="100" step="0.1" value="0"
                     style="margin-top: 0.5rem;">
             </div>
@@ -360,25 +366,93 @@
 
     <script>
         // --- CONSTANTS ---
+        const TRANSLATIONS = {
+            gl: {
+                title: "Mestre de Valoración",
+                subtitle: "Laboratorio de Química Virtual",
+                free_mode: "EXPLORACIÓN LIBRE",
+                mystery_mode: "ÁCIDO MISTERIOSO",
+                buffer_mode: "DESEÑO DE TAMPÓN",
+                free_mode_opt: "Exploración Libre",
+                mystery_mode_opt: "Ácido Misterioso",
+                buffer_mode_opt: "Deseño de Tampón",
+                config: "Configuración",
+                lab_mode: "MODO DE LABORATORIO",
+                select_acid: "SELECCIONAR ÁCIDO",
+                acid_conc: "CONC. DO ÁCIDO ($C_a$)",
+                acid_vol: "VOLUME DO ÁCIDO ($V_a$)",
+                base_conc: "CONC. DO VALORANTE (NaOH) ($C_b$)",
+                indicator: "INDICADOR",
+                reset: "Reiniciar Lab",
+                live_view: "Vista en Vivo",
+                ph_actual: "pH ACTUAL",
+                vbase_added: "$V_{base}$ engadido",
+                identified_as: "IDENTIFICADO COMO",
+                progress: "PROGRESO DA VALORACIÓN",
+                success_title: "Desafío Completado!",
+                success_btn: "Xenial!",
+                base_vol_label: "Volume de Base (mL)",
+                trans_of: "Transición de",
+                target_ph: "OBXECTIVO pH",
+                difference: "DIFERENZA",
+                reached: "🎯 OBXECTIVO ALCANZADO!",
+                mystery_q: "???",
+                copyright: "(c) Anxo Sánchez (2026)"
+            },
+            en: {
+                title: "Titration Master",
+                subtitle: "Virtual Chemistry Lab",
+                free_mode: "FREE EXPLORATION",
+                mystery_mode: "MYSTERY ACID",
+                buffer_mode: "BUFFER DESIGN",
+                free_mode_opt: "Free Exploration",
+                mystery_mode_opt: "Mystery Acid",
+                buffer_mode_opt: "Buffer Design",
+                config: "Configuration",
+                lab_mode: "LABORATORY MODE",
+                select_acid: "SELECT ACID",
+                acid_conc: "ACID CONC. ($C_a$)",
+                acid_vol: "ACID VOLUME ($V_a$)",
+                base_conc: "TITRANT CONC. (NaOH) ($C_b$)",
+                indicator: "INDICATOR",
+                reset: "Reset Lab",
+                live_view: "Live View",
+                ph_actual: "CURRENT pH",
+                vbase_added: "$V_{base}$ added",
+                identified_as: "IDENTIFIED AS",
+                progress: "TITRATION PROGRESS",
+                success_title: "Challenge Completed!",
+                success_btn: "Great!",
+                base_vol_label: "Base Volume (mL)",
+                trans_of: "Transition of",
+                target_ph: "PH TARGET",
+                difference: "DIFFERENCE",
+                reached: "🎯 TARGET REACHED!",
+                mystery_q: "???",
+                copyright: "(c) Anxo Sanchez (2026)"
+            }
+        };
+
         const ACIDS = [
-            { name: "Ácido Clorhídrico", formula: "HCl", pKa1: -2, pKa2: null, strong: true },
-            { name: "Ácido Acético", formula: "CH3COOH", pKa1: 4.76, pKa2: null },
-            { name: "Ácido Fórmico", formula: "HCOOH", pKa1: 3.75, pKa2: null },
-            { name: "Ácido Sulfúrico", formula: "H2SO4", pKa1: -2, pKa2: 1.99 },
-            { name: "Ácido Carbónico", formula: "H2CO3", pKa1: 6.35, pKa2: 10.33 },
-            { name: "Ácido Oxálico", formula: "H2C2O4", pKa1: 1.25, pKa2: 4.14 },
-            { name: "Ácido Fosfórico", formula: "H3PO4", pKa1: 2.12, pKa2: 7.21, pKa3: 12.32 }
+            { name: { gl: "Ácido Clorhídrico", en: "Hydrochloric Acid" }, formula: "HCl", pKa1: -2, pKa2: null, strong: true },
+            { name: { gl: "Ácido Acético", en: "Acetic Acid" }, formula: "CH3COOH", pKa1: 4.76, pKa2: null },
+            { name: { gl: "Ácido Fórmico", en: "Formic Acid" }, formula: "HCOOH", pKa1: 3.75, pKa2: null },
+            { name: { gl: "Ácido Sulfúrico", en: "Sulfuric Acid" }, formula: "H2SO4", pKa1: -2, pKa2: 1.99 },
+            { name: { gl: "Ácido Carbónico", en: "Carbonic Acid" }, formula: "H2CO3", pKa1: 6.35, pKa2: 10.33 },
+            { name: { gl: "Ácido Oxálico", en: "Oxalic Acid" }, formula: "H2C2O4", pKa1: 1.25, pKa2: 4.14 },
+            { name: { gl: "Ácido Fosfórico", en: "Phosphoric Acid" }, formula: "H3PO4", pKa1: 2.12, pKa2: 7.21, pKa3: 12.32 }
         ];
 
         const INDICATORS = [
-            { name: "Fenolftaleína", range: [8.2, 10.0], acidColor: [255, 255, 255], baseColor: [255, 0, 128] },
-            { name: "Alaranxado de Metilo", range: [3.1, 4.4], acidColor: [255, 0, 0], baseColor: [255, 255, 0] },
-            { name: "Azul de Bromotimol", range: [6.0, 7.6], acidColor: [255, 255, 0], baseColor: [0, 0, 255] },
-            { name: "Tornasol", range: [4.5, 8.3], acidColor: [255, 0, 0], baseColor: [0, 0, 255] }
+            { name: { gl: "Fenolftaleína", en: "Phenolphthalein" }, range: [8.2, 10.0], acidColor: [255, 255, 255], baseColor: [255, 0, 128] },
+            { name: { gl: "Alaranxado de Metilo", en: "Methyl Orange" }, range: [3.1, 4.4], acidColor: [255, 0, 0], baseColor: [255, 255, 0] },
+            { name: { gl: "Azul de Bromotimol", en: "Bromothymol Blue" }, range: [6.0, 7.6], acidColor: [255, 255, 0], baseColor: [0, 0, 255] },
+            { name: { gl: "Tornasol", en: "Litmus" }, range: [4.5, 8.3], acidColor: [255, 0, 0], baseColor: [0, 0, 255] }
         ];
 
         // --- STATE ---
         let state = {
+            lang: 'gl',
             mode: 'free',
             selectedAcid: ACIDS[0],
             selectedIndicator: INDICATORS[0],
@@ -467,6 +541,71 @@
         }
 
         // --- UI ACTIONS ---
+        function toggleLanguage() {
+            state.lang = state.lang === 'gl' ? 'en' : 'gl';
+            const flag = document.getElementById('lang-flag');
+            const label = document.getElementById('lang-label');
+            if (state.lang === 'en') {
+                flag.textContent = '⚪🔵'; // Galician flag representation
+                label.textContent = 'GL';
+            } else {
+                flag.textContent = '🇬🇧';
+                label.textContent = 'EN';
+            }
+            renderLanguage();
+            updateDisplay();
+            setupSelects(); // Refresh select options with new names
+        }
+
+        function renderLanguage() {
+            const lang = state.lang;
+            const dict = TRANSLATIONS[lang];
+
+            // Update all elements with data-i18n attribute
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (dict[key]) {
+                    el.innerHTML = el.innerHTML.includes('<i') 
+                        ? el.querySelector('i').outerHTML + ' ' + dict[key]
+                        : dict[key];
+                }
+            });
+
+            // Update chart titles
+            if (state.chart) {
+                state.chart.options.scales.x.title.text = dict.base_vol_label;
+                state.chart.update('none');
+            }
+        }
+
+        function setupSelects() {
+            const lang = state.lang;
+            
+            // Setup Acids Select
+            const acidSelect = document.getElementById('acid-select');
+            const currentAcidIndex = acidSelect.selectedIndex >= 0 ? acidSelect.selectedIndex : 0;
+            acidSelect.innerHTML = '';
+            ACIDS.forEach((a, i) => {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.textContent = `${a.name[lang]} (${a.formula})`;
+                acidSelect.appendChild(opt);
+            });
+            acidSelect.selectedIndex = currentAcidIndex;
+
+            // Setup Indicators Select
+            const indSelect = document.getElementById('indicator-select');
+            const currentIndIndex = indSelect.selectedIndex >= 0 ? indSelect.selectedIndex : 0;
+            indSelect.innerHTML = '';
+            INDICATORS.forEach((ind, i) => {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.textContent = ind.name[lang];
+                indSelect.appendChild(opt);
+            });
+            indSelect.selectedIndex = currentIndIndex;
+        }
+
         function initChart() {
             const ctx = document.getElementById('titrationChart').getContext('2d');
             state.chart = new Chart(ctx, {
@@ -563,6 +702,7 @@
 
             // Update Indicator Range Band
             const ind = state.selectedIndicator;
+            const dict = TRANSLATIONS[state.lang];
             state.chart.options.plugins.annotation.annotations = {
                 box1: {
                     type: 'box',
@@ -573,7 +713,7 @@
                     borderWidth: 1,
                     label: {
                         display: true,
-                        content: `Transición de ${ind.name}`,
+                        content: `${dict.trans_of} ${ind.name[state.lang]}`,
                         position: 'start',
                         color: '#94a3b8',
                         font: { size: 10, weight: 'normal' }
@@ -582,6 +722,7 @@
             };
 
             state.chart.options.scales.x.max = Math.max(100, Math.ceil(maxV / 10) * 10);
+            state.chart.options.scales.x.title.text = dict.base_vol_label;
             state.chart.update('none');
 
             // Win Conditions
@@ -589,15 +730,15 @@
                 const diff = Math.abs(currentPoint.y - state.targetPH);
                 const idDisplay = document.getElementById('id-display');
                 if (diff < 0.02) {
-                    idDisplay.textContent = "🎯 OBXECTIVO ALCANZADO!";
+                    idDisplay.textContent = dict.reached;
                     idDisplay.style.color = "#22c55e";
-                    showSuccess("Tampón deseñado con éxito a pH " + state.targetPH);
+                    showSuccess(dict.success_title + ": " + state.targetPH);
                 } else {
-                    idDisplay.textContent = `DIFERENZA: ${diff.toFixed(2)}`;
+                    idDisplay.textContent = `${dict.difference}: ${diff.toFixed(2)}`;
                     idDisplay.style.color = "#ef4444";
                 }
             } else if (state.mode === 'mystery') {
-                document.getElementById('id-display').textContent = "???";
+                document.getElementById('id-display').textContent = dict.mystery_q;
                 document.getElementById('id-display').style.color = "#94a3b8";
             } else {
                 document.getElementById('id-display').textContent = state.selectedAcid.formula;
@@ -617,11 +758,11 @@
             document.getElementById('titration-progress').value = 0;
 
             const badge = document.getElementById('game-mode-display');
-
+            const dict = TRANSLATIONS[state.lang];
             const acidGroup = document.getElementById('acid-select-group');
 
             if (newMode === 'mystery') {
-                badge.textContent = "ÁCIDO MISTERIOSO";
+                badge.textContent = dict.mystery_mode;
                 state.mysteryAcid = ACIDS[Math.floor(Math.random() * ACIDS.length)];
                 acidGroup.style.display = 'none';
                 badge.style.background = 'rgba(239, 68, 68, 0.1)';
@@ -629,13 +770,13 @@
                 badge.style.borderColor = '#ef4444';
             } else if (newMode === 'buffer') {
                 state.targetPH = (Math.random() * 4 + 4).toFixed(2);
-                badge.textContent = `OBXECTIVO pH: ${state.targetPH}`;
+                badge.textContent = `${dict.target_ph}: ${state.targetPH}`;
                 acidGroup.style.display = 'block';
                 badge.style.background = 'rgba(34, 197, 94, 0.1)';
                 badge.style.color = '#22c55e';
                 badge.style.borderColor = '#22c55e';
             } else {
-                badge.textContent = "EXPLORACIÓN LIBRE";
+                badge.textContent = dict.free_mode;
                 acidGroup.style.display = 'block';
                 badge.style.background = 'rgba(56, 189, 248, 0.1)';
                 badge.style.color = 'var(--accent-color)';
@@ -647,23 +788,7 @@
         // --- EVENT LISTENERS ---
         window.onload = () => {
             initChart();
-
-            // Setup Selects
-            const acidSelect = document.getElementById('acid-select');
-            ACIDS.forEach((a, i) => {
-                const opt = document.createElement('option');
-                opt.value = i;
-                opt.textContent = `${a.name} (${a.formula})`;
-                acidSelect.appendChild(opt);
-            });
-
-            const indSelect = document.getElementById('indicator-select');
-            INDICATORS.forEach((ind, i) => {
-                const opt = document.createElement('option');
-                opt.value = i;
-                opt.textContent = ind.name;
-                indSelect.appendChild(opt);
-            });
+            setupSelects();
 
             // Bind Events
             document.getElementById('mode-select').onchange = (e) => switchMode(e.target.value);
