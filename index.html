@@ -13,6 +13,19 @@
     <!-- Chart.js and Plugins via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1"></script>
+    <!-- MathJax for LaTeX Rendering -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js">
+    </script>
     <style>
         :root {
             --bg-color: #0f172a;
@@ -256,8 +269,9 @@
         <div style="display: flex; align-items: center; gap: 1rem;">
             <div id="game-mode-display" class="mode-badge" data-i18n="free_mode">EXPLORACIÓN LIBRE</div>
             <button id="lang-toggle" onclick="toggleLanguage()"
-                style="background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; transition: 0.3s; height: 38px;">
-                <span id="lang-flag">🇬🇧</span> <span id="lang-label">EN</span>
+                style="background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); color: white; padding: 0.4rem 0.8rem; border-radius: 0.5rem; cursor: pointer; display: flex; align-items: center; gap: 0.6rem; font-size: 0.9rem; transition: 0.3s; height: 38px;">
+                <img id="lang-flag" src="https://flagcdn.com/w40/us.png" style="width: 24px; height: auto; border-radius: 2px;">
+                <span id="lang-label">EN</span>
             </button>
         </div>
     </header>
@@ -545,11 +559,17 @@
             state.lang = state.lang === 'gl' ? 'en' : 'gl';
             const flag = document.getElementById('lang-flag');
             const label = document.getElementById('lang-label');
+            
+            const FLAGS = {
+                gl: 'https://upload.wikimedia.org/wikipedia/commons/6/64/Flag_of_Galicia.svg',
+                en: 'https://flagcdn.com/w40/us.png'
+            };
+
             if (state.lang === 'en') {
-                flag.textContent = '⚪🔵'; // Galician flag representation
+                flag.src = FLAGS.gl;
                 label.textContent = 'GL';
             } else {
-                flag.textContent = '🇬🇧';
+                flag.src = FLAGS.en;
                 label.textContent = 'EN';
             }
             renderLanguage();
@@ -575,6 +595,11 @@
             if (state.chart) {
                 state.chart.options.scales.x.title.text = dict.base_vol_label;
                 state.chart.update('none');
+            }
+
+            // Trigger MathJax Typesetting
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                window.MathJax.typesetPromise();
             }
         }
 
@@ -724,6 +749,11 @@
             state.chart.options.scales.x.max = Math.max(100, Math.ceil(maxV / 10) * 10);
             state.chart.options.scales.x.title.text = dict.base_vol_label;
             state.chart.update('none');
+
+            // Trigger MathJax Typesetting for dynamic labels
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                window.MathJax.typesetPromise();
+            }
 
             // Win Conditions
             if (state.mode === 'buffer') {
