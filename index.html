@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Titration Master | Virtual Chemistry Lab</title>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Outfit:wght@500;700&display=swap"
+        rel="stylesheet">
+    <!-- Chart.js and Plugins via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1"></script>
+    <!-- MathJax for LaTeX Rendering -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js">
+    </script>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --surface-color: rgba(30, 41, 59, 0.7);
+            --accent-color: #38bdf8;
+            --text-color: #f1f5f9;
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --danger: #ef4444;
+            --success: #22c55e;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            background-image:
+                radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            padding: 1.5rem 2rem;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
+            color: var(--accent-color);
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 280px 1fr 280px;
+            /* Slimmer sidebars */
+            gap: 1.5rem;
+            padding: 1rem 1.5rem;
+            flex-grow: 1;
+        }
+
+        .card {
+            background: var(--surface-color);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        /* Sidebar Controls */
+        .controls h2 {
+            font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .control-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .control-group label {
+            display: block;
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+            color: #94a3b8;
+        }
+
+        select,
+        input[type="range"] {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--glass-border);
+            color: white;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            outline: none;
+        }
+
+        .slider-value {
+            float: right;
+            color: var(--accent-color);
+            font-weight: 600;
+        }
+
+        .branding {
+            margin-top: auto;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--glass-border);
+            text-align: center;
+            font-size: 0.8rem;
+            color: #94a3b8;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .branding i {
+            font-size: 1.2rem;
+        }
+
+        /* Main View */
+        .main-chart {
+            padding: 1rem !important;
+            /* Slightly less padding */
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chart-container {
+            position: relative;
+            flex-grow: 1;
+            min-height: 550px;
+            width: 100%;
+        }
+
+        /* Right Panel - Lab Equipment */
+        .lab-view {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .beaker-container {
+            position: relative;
+            width: 150px;
+            height: 200px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: none;
+            border-radius: 0 0 20px 20px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .liquid {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 60%;
+            background: rgba(255, 255, 255, 0.8);
+            transition: background 0.3s ease, height 0.5s ease;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .buret {
+            width: 20px;
+            height: 150px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            position: relative;
+        }
+
+        .buret::after {
+            content: '';
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            width: 100%;
+        }
+
+        .stat-card {
+            background: rgba(15, 23, 42, 0.4);
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #94a3b8;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--accent-color);
+        }
+
+        .mode-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: rgba(56, 189, 248, 0.1);
+            color: var(--accent-color);
+            border: 1px solid var(--accent-color);
+        }
+
+        @media (max-width: 1100px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+
+            .controls,
+            .lab-view {
+                order: 2;
+            }
+
+            .main-chart {
+                order: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <i class="fas fa-flask-vial fa-2x" style="color: var(--accent-color)"></i>
+            <h1 id="app-title" data-i18n="title">Mestre de Valoración</h1>
+        </div>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <div id="game-mode-display" class="mode-badge" data-i18n="free_mode">EXPLORACIÓN LIBRE</div>
+            <button id="lang-toggle" onclick="toggleLanguage()"
+                style="background: rgba(255,255,255,0.1); border: 1px solid var(--glass-border); color: white; padding: 0.4rem 0.8rem; border-radius: 0.5rem; cursor: pointer; display: flex; align-items: center; gap: 0.6rem; font-size: 0.9rem; transition: 0.3s; height: 38px;">
+                <img id="lang-flag" src="https://flagcdn.com/w40/us.png" style="width: 24px; height: auto; border-radius: 2px;">
+                <span id="lang-label">EN</span>
+            </button>
+        </div>
+    </header>
+
+    <div id="success-overlay"
+        style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15, 23, 42, 0.95); padding: 2.5rem; border-radius: 1.5rem; border: 2px solid var(--success); box-shadow: 0 0 50px rgba(34, 197, 94, 0.4); z-index: 1000; text-align: center; backdrop-filter: blur(20px);">
+        <i class="fas fa-trophy fa-4x" style="color: var(--success); margin-bottom: 1rem;"></i>
+        <h2 id="success-title" style="font-family: 'Outfit', sans-serif; color: white; font-size: 2rem;" data-i18n="success_title">Desafío Completado!</h2>
+        <p id="success-msg" style="color: #94a3b8; margin: 1rem 0 2rem;">Deseñaches o tampón con éxito.</p>
+        <button id="success-close" onclick="document.getElementById('success-overlay').style.display='none'"
+            style="background: var(--success); color: white; border: none; padding: 0.75rem 2rem; border-radius: 0.5rem; font-weight: 700; cursor: pointer;" data-i18n="success_btn">Xenial!</button>
+    </div>
+
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="card controls" style="display: flex; flex-direction: column;">
+            <h2 data-i18n="config"><i class="fas fa-sliders"></i> Configuración</h2>
+
+            <div class="control-group">
+                <label data-i18n="lab_mode">MODO DE LABORATORIO</label>
+                <select id="mode-select">
+                    <option value="free" data-i18n="free_mode_opt">Exploración Libre</option>
+                    <option value="mystery" data-i18n="mystery_mode_opt">Ácido Misterioso</option>
+                    <option value="buffer" data-i18n="buffer_mode_opt">Deseño de Tampón</option>
+                </select>
+            </div>
+
+            <div class="control-group" id="acid-select-group">
+                <label data-i18n="select_acid">SELECCIONAR ÁCIDO</label>
+                <select id="acid-select"></select>
+            </div>
+
+            <div class="control-group">
+                <label id="label-acid-conc" data-i18n="acid_conc">CONC. DO ÁCIDO ($C_a$)</label>
+                <input type="range" id="acid-conc" min="0.01" max="1.0" step="0.01" value="0.1">
+                <span class="slider-value" id="acid-conc-val">0.10 M</span>
+            </div>
+
+            <div class="control-group">
+                <label id="label-acid-vol" data-i18n="acid_vol">VOLUME DO ÁCIDO ($V_a$)</label>
+                <input type="range" id="acid-vol" min="10" max="100" step="5" value="25">
+                <span class="slider-value" id="acid-vol-val">25 mL</span>
+            </div>
+
+            <div class="control-group">
+                <label id="label-base-conc" data-i18n="base_conc">CONC. DO VALORANTE (NaOH) ($C_b$)</label>
+                <input type="range" id="base-conc" min="0.01" max="1.0" step="0.01" value="0.1">
+                <span class="slider-value" id="base-conc-val">0.10 M</span>
+            </div>
+
+            <div class="control-group">
+                <label data-i18n="indicator">INDICADOR</label>
+                <select id="indicator-select"></select>
+            </div>
+
+            <button id="reset-btn"
+                style="width: 100%; padding: 0.75rem; background: var(--danger); border: none; border-radius: 0.5rem; color: white; font-weight: 600; cursor: pointer; margin-top: 1rem; opacity: 0.8; transition: 0.3s">
+                <i class="fas fa-redo"></i> <span data-i18n="reset">Reiniciar Lab</span>
+            </button>
+
+            <div class="branding">
+                <i class="fab fa-creative-commons"></i>
+                <span data-i18n="copyright">(c) Anxo Sánchez (2026)</span>
+            </div>
+        </aside>
+
+        <!-- Main Chart -->
+        <main class="card main-chart">
+            <div class="chart-container">
+                <canvas id="titrationChart"></canvas>
+            </div>
+        </main>
+
+        <!-- Lab View -->
+        <aside class="card lab-view">
+            <h2 data-i18n="live_view"><i class="fas fa-microscope"></i> Vista en Vivo</h2>
+
+            <div class="buret"></div>
+
+            <div class="beaker-container">
+                <div id="liquid" class="liquid"></div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label" data-i18n="ph_actual">pH ACTUAL</div>
+                    <div id="ph-display" class="stat-value">--</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label" data-i18n="vbase_added">$V_{base}$ engadido</div>
+                    <div id="vbase-display" class="stat-value">--</div>
+                </div>
+                <div class="stat-card" style="grid-column: span 2">
+                    <div class="stat-label" data-i18n="identified_as">IDENTIFICADO COMO</div>
+                    <div id="id-display" class="stat-value">--</div>
+                </div>
+            </div>
+
+            <div style="width: 100%; margin-top: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+                    <label style="font-size: 0.7rem; color: #94a3b8;" data-i18n="progress">PROGRESO DA VALORACIÓN</label>
+                    <button id="add-drop-btn" title="Add drop (+0.1 mL)" style="background: rgba(56, 189, 248, 0.15); border: 1px solid var(--accent-color); color: var(--accent-color); padding: 0.15rem 0.5rem; border-radius: 0.4rem; cursor: pointer; transition: 0.2s;">
+                        <i class="fas fa-angles-right"></i> <span data-i18n="add_drop_btn" style="font-size: 0.65rem; font-weight: 700;">+PINGA</span>
+                    </button>
+                </div>
+                <input type="range" id="titration-progress" min="0" max="100" step="0.1" value="0"
+                    style="margin-top: 0.5rem;">
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        // --- CONSTANTS ---
+        const TRANSLATIONS = {
+            gl: {
+                title: "Mestre de Valoración",
+                subtitle: "Laboratorio de Química Virtual",
+                free_mode: "EXPLORACIÓN LIBRE",
+                mystery_mode: "ÁCIDO MISTERIOSO",
+                buffer_mode: "DESEÑO DE TAMPÓN",
+                free_mode_opt: "Exploración Libre",
+                mystery_mode_opt: "Ácido Misterioso",
+                buffer_mode_opt: "Deseño de Tampón",
+                config: "Configuración",
+                lab_mode: "MODO DE LABORATORIO",
+                select_acid: "SELECCIONAR ÁCIDO",
+                acid_conc: "CONC. DO ÁCIDO ($C_a$)",
+                acid_vol: "VOLUME DO ÁCIDO ($V_a$)",
+                base_conc: "CONC. DO VALORANTE (NaOH) ($C_b$)",
+                indicator: "INDICADOR",
+                reset: "Reiniciar Lab",
+                live_view: "Vista en Vivo",
+                ph_actual: "pH ACTUAL",
+                vbase_added: "$V_{base}$ engadido",
+                identified_as: "IDENTIFICADO COMO",
+                progress: "PROGRESO DA VALORACIÓN",
+                success_title: "Desafío Completado!",
+                success_btn: "Xenial!",
+                base_vol_label: "Volume de Base (mL)",
+                trans_of: "Transición de",
+                target_ph: "OBXECTIVO pH",
+                difference: "DIFERENZA",
+                reached: "🎯 OBXECTIVO ALCANZADO!",
+                mystery_q: "???",
+                add_drop: "Engadir Gota (+0.1 mL)",
+                add_drop_btn: "+PINGA",
+                copyright: "(c) Anxo Sánchez (2026)"
+            },
+            en: {
+                title: "Titration Master",
+                subtitle: "Virtual Chemistry Lab",
+                free_mode: "FREE EXPLORATION",
+                mystery_mode: "MYSTERY ACID",
+                buffer_mode: "BUFFER DESIGN",
+                free_mode_opt: "Free Exploration",
+                mystery_mode_opt: "Mystery Acid",
+                buffer_mode_opt: "Buffer Design",
+                config: "Configuration",
+                lab_mode: "LABORATORY MODE",
+                select_acid: "SELECT ACID",
+                acid_conc: "ACID CONC. ($C_a$)",
+                acid_vol: "ACID VOLUME ($V_a$)",
+                base_conc: "TITRANT CONC. (NaOH) ($C_b$)",
+                indicator: "INDICATOR",
+                reset: "Reset Lab",
+                live_view: "Live View",
+                ph_actual: "CURRENT pH",
+                vbase_added: "$V_{base}$ added",
+                identified_as: "IDENTIFIED AS",
+                progress: "TITRATION PROGRESS",
+                success_title: "Challenge Completed!",
+                success_btn: "Great!",
+                base_vol_label: "Base Volume (mL)",
+                trans_of: "Transition of",
+                target_ph: "PH TARGET",
+                difference: "DIFFERENCE",
+                reached: "🎯 TARGET REACHED!",
+                mystery_q: "???",
+                add_drop: "Add Drop (+0.1 mL)",
+                add_drop_btn: "+DROP",
+                copyright: "(c) Anxo Sanchez (2026)"
+            }
+        };
+
+        const ACIDS = [
+            { name: { gl: "Ácido Clorhídrico", en: "Hydrochloric Acid" }, formula: "HCl", pKa1: -2, pKa2: null, strong: true },
+            { name: { gl: "Ácido Acético", en: "Acetic Acid" }, formula: "CH3COOH", pKa1: 4.76, pKa2: null },
+            { name: { gl: "Ácido Fórmico", en: "Formic Acid" }, formula: "HCOOH", pKa1: 3.75, pKa2: null },
+            { name: { gl: "Ácido Sulfúrico", en: "Sulfuric Acid" }, formula: "H2SO4", pKa1: -2, pKa2: 1.99 },
+            { name: { gl: "Ácido Carbónico", en: "Carbonic Acid" }, formula: "H2CO3", pKa1: 6.35, pKa2: 10.33 },
+            { name: { gl: "Ácido Oxálico", en: "Oxalic Acid" }, formula: "H2C2O4", pKa1: 1.25, pKa2: 4.14 },
+            { name: { gl: "Ácido Fosfórico", en: "Phosphoric Acid" }, formula: "H3PO4", pKa1: 2.12, pKa2: 7.21, pKa3: 12.32 }
+        ];
+
+        const INDICATORS = [
+            { name: { gl: "Fenolftaleína", en: "Phenolphthalein" }, range: [8.2, 10.0], acidColor: [255, 255, 255], baseColor: [255, 0, 128] },
+            { name: { gl: "Alaranxado de Metilo", en: "Methyl Orange" }, range: [3.1, 4.4], acidColor: [255, 0, 0], baseColor: [255, 255, 0] },
+            { name: { gl: "Azul de Bromotimol", en: "Bromothymol Blue" }, range: [6.0, 7.6], acidColor: [255, 255, 0], baseColor: [0, 0, 255] },
+            { name: { gl: "Tornasol", en: "Litmus" }, range: [4.5, 8.3], acidColor: [255, 0, 0], baseColor: [0, 0, 255] }
+        ];
+
+        // --- STATE ---
+        let state = {
+            lang: 'gl',
+            mode: 'free',
+            selectedAcid: ACIDS[0],
+            selectedIndicator: INDICATORS[0],
+            Ca: 0.1,
+            Va: 25,
+            Cb: 0.1,
+            progress: 0,
+            curve: [],
+            equivPoints: [],
+            mysteryAcid: null,
+            targetPH: 7,
+            chart: null
+        };
+
+        // --- CHEMICAL ENGINE ---
+        function calculateCurve() {
+            const { Ca, Va, Cb, selectedAcid, mode, mysteryAcid } = state;
+            const acid = (mode === 'mystery') ? mysteryAcid : selectedAcid;
+
+            const Kw = 1e-14;
+            const pKa1 = acid.pKa1;
+            const pKa2 = acid.pKa2 || 20;
+            const pKa3 = acid.pKa3 || 20;
+
+            const Ka1 = Math.pow(10, -pKa1);
+            const Ka2 = Math.pow(10, -pKa2);
+            const Ka3 = Math.pow(10, -pKa3);
+
+            let data = [];
+            let lastDeriv = 0;
+            state.equivPoints = [];
+
+            // Inverse Method: Iterate pH from 0.5 to 13.5
+            for (let ph = 0.5; ph <= 13.5; ph += 0.02) {
+                const H = Math.pow(10, -ph);
+                const OH = Kw / H;
+                const delta = H - OH;
+
+                const denom = (H * H * H) + (Ka1 * H * H) + (Ka1 * Ka2 * H) + (Ka1 * Ka2 * Ka3);
+                const a1 = (Ka1 * H * H) / denom;
+                const a2 = (Ka1 * Ka2 * H) / denom;
+                const a3 = (Ka1 * Ka2 * Ka3) / denom;
+
+                const num = Va * (Ca * (a1 + 2 * a2 + 3 * a3) - delta);
+                const den = Cb + delta;
+                const Vb = num / den;
+
+                if (Vb >= 0 && Vb <= 150) { // Max volume 150mL
+                    data.push({ x: parseFloat(Vb.toFixed(3)), y: parseFloat(ph.toFixed(2)) });
+                }
+            }
+
+            // Sort by Vb for Chart.js
+            state.curve = data.sort((a, b) => a.x - b.x);
+
+            // Find Equivalence Points (Stoichiometric Method)
+            const numProtons = acid.pKa3 ? 3 : (acid.pKa2 ? 2 : 1);
+            for (let n = 1; n <= numProtons; n++) {
+                const targetVb = (n * Va * Ca) / Cb;
+                if (targetVb <= 150) {
+                    // Find closest point in generated curve
+                    let closest = state.curve[0];
+                    let minDiff = Infinity;
+                    for (let pt of state.curve) {
+                        const diff = Math.abs(pt.x - targetVb);
+                        if (diff < minDiff) {
+                            minDiff = diff;
+                            closest = pt;
+                        }
+                    }
+                    
+                    // For HCl/Strong acids, force pH 7 at equivalence
+                    // For others, use the point closest to the stoichiometric volume
+                    if (acid.strong && n === 1) {
+                        state.equivPoints.push({ x: targetVb, y: 7.0 });
+                    } else if (minDiff < 0.5) {
+                        state.equivPoints.push(closest);
+                    }
+                }
+            }
+        }
+
+        // --- COLOR LOGIC ---
+        function getIndicatorColor(ph) {
+            const ind = state.selectedIndicator;
+            const [min, max] = ind.range;
+            const pKin = (min + max) / 2;
+
+            // ratio = 1 / (1 + 10^(pKin - currentPH))
+            const ratio = 1 / (1 + Math.pow(10, pKin - ph));
+
+            const r = Math.round(ind.acidColor[0] * (1 - ratio) + ind.baseColor[0] * ratio);
+            const g = Math.round(ind.acidColor[1] * (1 - ratio) + ind.baseColor[1] * ratio);
+            const b = Math.round(ind.acidColor[2] * (1 - ratio) + ind.baseColor[2] * ratio);
+
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        // --- UI ACTIONS ---
+        function toggleLanguage() {
+            state.lang = state.lang === 'gl' ? 'en' : 'gl';
+            const flag = document.getElementById('lang-flag');
+            const label = document.getElementById('lang-label');
+            
+            const FLAGS = {
+                gl: 'https://upload.wikimedia.org/wikipedia/commons/6/64/Flag_of_Galicia.svg',
+                en: 'https://flagcdn.com/w40/us.png'
+            };
+
+            if (state.lang === 'en') {
+                flag.src = FLAGS.gl;
+                label.textContent = 'GL';
+            } else {
+                flag.src = FLAGS.en;
+                label.textContent = 'EN';
+            }
+            renderLanguage();
+            updateDisplay();
+            setupSelects(); // Refresh select options with new names
+        }
+
+        function renderLanguage() {
+            const lang = state.lang;
+            const dict = TRANSLATIONS[lang];
+
+            // Update all elements with data-i18n attribute
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (dict[key]) {
+                    el.innerHTML = el.innerHTML.includes('<i') 
+                        ? el.querySelector('i').outerHTML + ' ' + dict[key]
+                        : dict[key];
+                }
+            });
+
+            // Update chart titles
+            if (state.chart) {
+                state.chart.options.scales.x.title.text = dict.base_vol_label;
+                state.chart.update('none');
+            }
+
+            // Trigger MathJax Typesetting
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                window.MathJax.typesetPromise();
+            }
+        }
+
+        function setupSelects() {
+            const lang = state.lang;
+            
+            // Setup Acids Select
+            const acidSelect = document.getElementById('acid-select');
+            const currentAcidIndex = acidSelect.selectedIndex >= 0 ? acidSelect.selectedIndex : 0;
+            acidSelect.innerHTML = '';
+            ACIDS.forEach((a, i) => {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.textContent = `${a.name[lang]} (${a.formula})`;
+                acidSelect.appendChild(opt);
+            });
+            acidSelect.selectedIndex = currentAcidIndex;
+
+            // Setup Indicators Select
+            const indSelect = document.getElementById('indicator-select');
+            const currentIndIndex = indSelect.selectedIndex >= 0 ? indSelect.selectedIndex : 0;
+            indSelect.innerHTML = '';
+            INDICATORS.forEach((ind, i) => {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.textContent = ind.name[lang];
+                indSelect.appendChild(opt);
+            });
+            indSelect.selectedIndex = currentIndIndex;
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('titrationChart').getContext('2d');
+            state.chart = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        {
+                            label: 'Titration Curve',
+                            data: [],
+                            showLine: true,
+                            borderColor: '#38bdf8',
+                            backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                            borderWidth: 3,
+                            pointRadius: 0,
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Equivalence Points',
+                            data: [],
+                            backgroundColor: '#ef4444',
+                            pointRadius: 6,
+                            pointHoverRadius: 8
+                        },
+                        {
+                            label: 'Current Point',
+                            data: [],
+                            backgroundColor: '#fff',
+                            borderColor: '#38bdf8',
+                            borderWidth: 2,
+                            pointRadius: 8,
+                            pointHoverRadius: 10,
+                            zIndex: 10
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            id: 'x',
+                            title: { display: true, text: 'Volume de Base (mL)', color: '#94a3b8' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            ticks: { color: '#94a3b8' },
+                            min: 0,
+                            max: 100,
+                            beginAtZero: true
+                        },
+                        y: {
+                            id: 'y',
+                            title: { display: true, text: 'pH', color: '#94a3b8' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            ticks: { color: '#94a3b8' },
+                            min: 0,
+                            max: 14,
+                            suggestedMin: 0,
+                            suggestedMax: 14
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => `V: ${context.parsed.x} mL, pH: ${context.parsed.y}`
+                            }
+                        },
+                        zoom: {
+                            limits: {
+                                x: { min: 0 },
+                                y: { min: 0, max: 14 }
+                            },
+                            zoom: {
+                                enabled: false
+                            },
+                            pan: {
+                                enabled: false
+                            }
+                        }
+                    }
+                }
+            });
+
+        }
+
+        function updateDisplay() {
+            calculateCurve();
+            
+            if (!state.curve || state.curve.length === 0) return;
+
+            // Find current data point based on progress
+            const maxV = state.curve[state.curve.length - 1].x;
+            const currentV = (state.progress / 100) * maxV;
+
+            let currentPoint = state.curve[0];
+            for (let pt of state.curve) {
+                if (pt.x <= currentV) currentPoint = pt;
+                else break;
+            }
+
+            // Update Labels
+            document.getElementById('ph-display').textContent = currentPoint.y.toFixed(2);
+            document.getElementById('vbase-display').textContent = currentV.toFixed(2) + " mL";
+
+            // Update Beaker
+            const liquid = document.getElementById('liquid');
+            const color = getIndicatorColor(currentPoint.y);
+            liquid.style.backgroundColor = color;
+            liquid.style.height = `${40 + (currentPoint.x / 1.5)}%`;
+
+            // Update Chart
+            state.chart.data.datasets[0].data = state.curve;
+            state.chart.data.datasets[1].data = state.equivPoints;
+            state.chart.data.datasets[2].data = [currentPoint];
+
+            // Update Indicator Range Band
+            const ind = state.selectedIndicator;
+            const dict = TRANSLATIONS[state.lang];
+            state.chart.options.plugins.annotation.annotations = {
+                box1: {
+                    type: 'box',
+                    yMin: ind.range[0],
+                    yMax: ind.range[1],
+                    backgroundColor: `rgba(${ind.baseColor.join(',')}, 0.08)`,
+                    borderColor: 'rgba(255,255,255,0.1)',
+                    borderWidth: 1,
+                    label: {
+                        display: true,
+                        content: `${dict.trans_of} ${ind.name[state.lang]}`,
+                        position: 'start',
+                        color: '#94a3b8',
+                        font: { size: 10, weight: 'normal' }
+                    }
+                }
+            };
+
+            state.chart.options.scales.x.min = 0;
+            state.chart.options.scales.x.max = Math.max(100, Math.ceil(maxV / 10) * 10);
+            state.chart.options.scales.y.min = 0;
+            state.chart.options.scales.y.max = 14;
+            state.chart.options.plugins.annotation.annotations.box1.label.content = `${dict.trans_of} ${ind.name[state.lang]}`;
+            state.chart.update('none');
+
+            // Trigger MathJax Typesetting for dynamic labels
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                window.MathJax.typesetPromise();
+            }
+
+            // Win Conditions
+            if (state.mode === 'buffer') {
+                const diff = Math.abs(currentPoint.y - state.targetPH);
+                const idDisplay = document.getElementById('id-display');
+                if (diff < 0.02) {
+                    idDisplay.textContent = dict.reached;
+                    idDisplay.style.color = "#22c55e";
+                    showSuccess(dict.success_title + ": " + state.targetPH);
+                } else {
+                    idDisplay.textContent = `${dict.difference}: ${diff.toFixed(2)}`;
+                    idDisplay.style.color = "#ef4444";
+                }
+            } else if (state.mode === 'mystery') {
+                document.getElementById('id-display').textContent = dict.mystery_q;
+                document.getElementById('id-display').style.color = "#94a3b8";
+            } else {
+                document.getElementById('id-display').textContent = state.selectedAcid.formula;
+                document.getElementById('id-display').style.color = "var(--accent-color)";
+            }
+        }
+
+        function showSuccess(msg) {
+            if (document.getElementById('success-overlay').style.display === 'block') return;
+            document.getElementById('success-msg').textContent = msg;
+            document.getElementById('success-overlay').style.display = 'block';
+        }
+
+        function switchMode(newMode) {
+            state.mode = newMode;
+            state.progress = 0;
+            document.getElementById('titration-progress').value = 0;
+
+            const badge = document.getElementById('game-mode-display');
+            const dict = TRANSLATIONS[state.lang];
+            const acidGroup = document.getElementById('acid-select-group');
+
+            if (newMode === 'mystery') {
+                badge.textContent = dict.mystery_mode;
+                state.mysteryAcid = ACIDS[Math.floor(Math.random() * ACIDS.length)];
+                acidGroup.style.display = 'none';
+                badge.style.background = 'rgba(239, 68, 68, 0.1)';
+                badge.style.color = '#ef4444';
+                badge.style.borderColor = '#ef4444';
+            } else if (newMode === 'buffer') {
+                state.targetPH = (Math.random() * 4 + 4).toFixed(2);
+                badge.textContent = `${dict.target_ph}: ${state.targetPH}`;
+                acidGroup.style.display = 'block';
+                badge.style.background = 'rgba(34, 197, 94, 0.1)';
+                badge.style.color = '#22c55e';
+                badge.style.borderColor = '#22c55e';
+            } else {
+                badge.textContent = dict.free_mode;
+                acidGroup.style.display = 'block';
+                badge.style.background = 'rgba(56, 189, 248, 0.1)';
+                badge.style.color = 'var(--accent-color)';
+                badge.style.borderColor = 'var(--accent-color)';
+            }
+            updateDisplay();
+        }
+
+        // --- EVENT LISTENERS ---
+        window.onload = () => {
+            initChart();
+            setupSelects();
+
+            // Bind Events
+            document.getElementById('mode-select').addEventListener('change', (e) => switchMode(e.target.value));
+
+            // Update UI events
+            document.getElementById('titration-progress').addEventListener('input', (e) => {
+                state.progress = parseFloat(e.target.value);
+                updateDisplay();
+            });
+
+            document.getElementById('add-drop-btn').addEventListener('click', (e) => {
+                console.log("Add drop clicked");
+                if (!state.curve || state.curve.length === 0) {
+                    calculateCurve();
+                }
+                if (state.curve.length === 0) return;
+                
+                const maxV = state.curve[state.curve.length - 1].x;
+                const currentV = (state.progress / 100) * maxV;
+                const nextV = Math.min(maxV, currentV + 0.1);
+                state.progress = (nextV / maxV) * 100;
+                
+                document.getElementById('titration-progress').value = state.progress;
+                updateDisplay();
+            });
+
+            document.getElementById('acid-select').addEventListener('change', (e) => {
+                state.selectedAcid = ACIDS[e.target.value];
+                updateDisplay();
+            });
+
+            document.getElementById('indicator-select').addEventListener('change', (e) => {
+                state.selectedIndicator = INDICATORS[e.target.value];
+                updateDisplay();
+            });
+
+            const sliders = [
+                { id: 'acid-conc', key: 'Ca', unit: ' M' },
+                { id: 'acid-vol', key: 'Va', unit: ' mL' },
+                { id: 'base-conc', key: 'Cb', unit: ' M' },
+                { id: 'titration-progress', key: 'progress', unit: '%' }
+            ];
+
+            sliders.forEach(s => {
+                const el = document.getElementById(s.id);
+                if (el) {
+                    el.oninput = (e) => {
+                        const val = parseFloat(e.target.value);
+                        state[s.key] = val;
+                        const valDisplay = document.getElementById(s.id + '-val');
+                        if (valDisplay) valDisplay.textContent = val.toFixed(2) + s.unit;
+                        updateDisplay();
+                    };
+                }
+            });
+
+            document.getElementById('reset-btn').onclick = () => {
+                state.progress = 0;
+                document.getElementById('titration-progress').value = 0;
+                updateDisplay();
+            };
+
+            // Initial view
+            renderLanguage();
+            updateDisplay();
+        };
+    </script>
+</body>
+
+</html>
