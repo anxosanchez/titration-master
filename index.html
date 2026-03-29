@@ -13,6 +13,7 @@
     <!-- Chart.js and Plugins via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1"></script>
     <!-- MathJax for LaTeX Rendering -->
     <script>
         window.MathJax = {
@@ -306,14 +307,14 @@
 
             <div class="control-group">
                 <label id="label-acid-conc" data-i18n="acid_conc">CONC. DO ÁCIDO ($C_a$)</label>
-                <input type="range" id="酸-conc" min="0.01" max="1.0" step="0.01" value="0.1">
-                <span class="slider-value" id="酸-conc-val">0.10 M</span>
+                <input type="range" id="acid-conc" min="0.01" max="1.0" step="0.01" value="0.1">
+                <span class="slider-value" id="acid-conc-val">0.10 M</span>
             </div>
 
             <div class="control-group">
                 <label id="label-acid-vol" data-i18n="acid_vol">VOLUME DO ÁCIDO ($V_a$)</label>
-                <input type="range" id="酸-vol" min="10" max="100" step="5" value="25">
-                <span class="slider-value" id="酸-vol-val">25 mL</span>
+                <input type="range" id="acid-vol" min="10" max="100" step="5" value="25">
+                <span class="slider-value" id="acid-vol-val">25 mL</span>
             </div>
 
             <div class="control-group">
@@ -371,7 +372,12 @@
             </div>
 
             <div style="width: 100%; margin-top: 1rem;">
-                <label style="font-size: 0.7rem; color: #94a3b8;" data-i18n="progress">PROGRESO DA VALORACIÓN</label>
+                <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+                    <label style="font-size: 0.7rem; color: #94a3b8;" data-i18n="progress">PROGRESO DA VALORACIÓN</label>
+                    <button id="add-drop-btn" title="Add drop (+0.1 mL)" style="background: rgba(56, 189, 248, 0.15); border: 1px solid var(--accent-color); color: var(--accent-color); padding: 0.15rem 0.5rem; border-radius: 0.4rem; cursor: pointer; transition: 0.2s;">
+                        <i class="fas fa-angles-right"></i> <span data-i18n="add_drop_btn" style="font-size: 0.65rem; font-weight: 700;">+PINGA</span>
+                    </button>
+                </div>
                 <input type="range" id="titration-progress" min="0" max="100" step="0.1" value="0"
                     style="margin-top: 0.5rem;">
             </div>
@@ -411,6 +417,8 @@
                 difference: "DIFERENZA",
                 reached: "🎯 OBXECTIVO ALCANZADO!",
                 mystery_q: "???",
+                add_drop: "Engadir Gota (+0.1 mL)",
+                add_drop_btn: "+PINGA",
                 copyright: "(c) Anxo Sánchez (2026)"
             },
             en: {
@@ -443,6 +451,8 @@
                 difference: "DIFFERENCE",
                 reached: "🎯 TARGET REACHED!",
                 mystery_q: "???",
+                add_drop: "Add Drop (+0.1 mL)",
+                add_drop_btn: "+DROP",
                 copyright: "(c) Anxo Sanchez (2026)"
             }
         };
@@ -489,9 +499,11 @@
             const Kw = 1e-14;
             const pKa1 = acid.pKa1;
             const pKa2 = acid.pKa2 || 20;
+            const pKa3 = acid.pKa3 || 20;
 
             const Ka1 = Math.pow(10, -pKa1);
             const Ka2 = Math.pow(10, -pKa2);
+            const Ka3 = Math.pow(10, -pKa3);
 
             let data = [];
             let lastDeriv = 0;
@@ -503,11 +515,12 @@
                 const OH = Kw / H;
                 const delta = H - OH;
 
-                const denom = (H * H) + (Ka1 * H) + (Ka1 * Ka2);
-                const a1 = (Ka1 * H) / denom;
-                const a2 = (Ka1 * Ka2) / denom;
+                const denom = (H * H * H) + (Ka1 * H * H) + (Ka1 * Ka2 * H) + (Ka1 * Ka2 * Ka3);
+                const a1 = (Ka1 * H * H) / denom;
+                const a2 = (Ka1 * Ka2 * H) / denom;
+                const a3 = (Ka1 * Ka2 * Ka3) / denom;
 
-                const num = Va * (Ca * (a1 + 2 * a2) - delta);
+                const num = Va * (Ca * (a1 + 2 * a2 + 3 * a3) - delta);
                 const den = Cb + delta;
                 const Vb = num / den;
 
@@ -519,22 +532,30 @@
             // Sort by Vb for Chart.js
             state.curve = data.sort((a, b) => a.x - b.x);
 
-            // Find Equivalence Points (Simple derivative method)
-            for (let i = 2; i < state.curve.length - 2; i++) {
-                const p1 = state.curve[i - 1];
-                const p2 = state.curve[i + 1];
-                const dV = p2.x - p1.x;
-                const dpH = p2.y - p1.y;
-                const deriv = dpH / dV;
-
-                if (deriv > 2 && deriv > lastDeriv && deriv > (dpH / dV)) {
-                    // Local maximum of derivative
-                    // Check if it's a significant jump
-                    if (state.equivPoints.length === 0 || Math.abs(state.curve[i].x - state.equivPoints[state.equivPoints.length - 1].x) > 5) {
-                        state.equivPoints.push(state.curve[i]);
+            // Find Equivalence Points (Stoichiometric Method)
+            const numProtons = acid.pKa3 ? 3 : (acid.pKa2 ? 2 : 1);
+            for (let n = 1; n <= numProtons; n++) {
+                const targetVb = (n * Va * Ca) / Cb;
+                if (targetVb <= 150) {
+                    // Find closest point in generated curve
+                    let closest = state.curve[0];
+                    let minDiff = Infinity;
+                    for (let pt of state.curve) {
+                        const diff = Math.abs(pt.x - targetVb);
+                        if (diff < minDiff) {
+                            minDiff = diff;
+                            closest = pt;
+                        }
+                    }
+                    
+                    // For HCl/Strong acids, force pH 7 at equivalence
+                    // For others, use the point closest to the stoichiometric volume
+                    if (acid.strong && n === 1) {
+                        state.equivPoints.push({ x: targetVb, y: 7.0 });
+                    } else if (minDiff < 0.5) {
+                        state.equivPoints.push(closest);
                     }
                 }
-                lastDeriv = deriv;
             }
         }
 
@@ -671,18 +692,23 @@
                     maintainAspectRatio: false,
                     scales: {
                         x: {
+                            id: 'x',
                             title: { display: true, text: 'Volume de Base (mL)', color: '#94a3b8' },
                             grid: { color: 'rgba(255, 255, 255, 0.1)' },
                             ticks: { color: '#94a3b8' },
                             min: 0,
-                            max: 100
+                            max: 100,
+                            beginAtZero: true
                         },
                         y: {
+                            id: 'y',
                             title: { display: true, text: 'pH', color: '#94a3b8' },
                             grid: { color: 'rgba(255, 255, 255, 0.1)' },
                             ticks: { color: '#94a3b8' },
                             min: 0,
-                            max: 14
+                            max: 14,
+                            suggestedMin: 0,
+                            suggestedMax: 14
                         }
                     },
                     plugins: {
@@ -691,14 +717,29 @@
                             callbacks: {
                                 label: (context) => `V: ${context.parsed.x} mL, pH: ${context.parsed.y}`
                             }
+                        },
+                        zoom: {
+                            limits: {
+                                x: { min: 0 },
+                                y: { min: 0, max: 14 }
+                            },
+                            zoom: {
+                                enabled: false
+                            },
+                            pan: {
+                                enabled: false
+                            }
                         }
                     }
                 }
             });
+
         }
 
         function updateDisplay() {
             calculateCurve();
+            
+            if (!state.curve || state.curve.length === 0) return;
 
             // Find current data point based on progress
             const maxV = state.curve[state.curve.length - 1].x;
@@ -712,7 +753,7 @@
 
             // Update Labels
             document.getElementById('ph-display').textContent = currentPoint.y.toFixed(2);
-            document.getElementById('vbase-display').textContent = currentPoint.x.toFixed(1) + " mL";
+            document.getElementById('vbase-display').textContent = currentV.toFixed(2) + " mL";
 
             // Update Beaker
             const liquid = document.getElementById('liquid');
@@ -746,8 +787,11 @@
                 }
             };
 
+            state.chart.options.scales.x.min = 0;
             state.chart.options.scales.x.max = Math.max(100, Math.ceil(maxV / 10) * 10);
-            state.chart.options.scales.x.title.text = dict.base_vol_label;
+            state.chart.options.scales.y.min = 0;
+            state.chart.options.scales.y.max = 14;
+            state.chart.options.plugins.annotation.annotations.box1.label.content = `${dict.trans_of} ${ind.name[state.lang]}`;
             state.chart.update('none');
 
             // Trigger MathJax Typesetting for dynamic labels
@@ -821,34 +865,58 @@
             setupSelects();
 
             // Bind Events
-            document.getElementById('mode-select').onchange = (e) => switchMode(e.target.value);
+            document.getElementById('mode-select').addEventListener('change', (e) => switchMode(e.target.value));
 
-            document.getElementById('acid-select').onchange = (e) => {
+            // Update UI events
+            document.getElementById('titration-progress').addEventListener('input', (e) => {
+                state.progress = parseFloat(e.target.value);
+                updateDisplay();
+            });
+
+            document.getElementById('add-drop-btn').addEventListener('click', (e) => {
+                console.log("Add drop clicked");
+                if (!state.curve || state.curve.length === 0) {
+                    calculateCurve();
+                }
+                if (state.curve.length === 0) return;
+                
+                const maxV = state.curve[state.curve.length - 1].x;
+                const currentV = (state.progress / 100) * maxV;
+                const nextV = Math.min(maxV, currentV + 0.1);
+                state.progress = (nextV / maxV) * 100;
+                
+                document.getElementById('titration-progress').value = state.progress;
+                updateDisplay();
+            });
+
+            document.getElementById('acid-select').addEventListener('change', (e) => {
                 state.selectedAcid = ACIDS[e.target.value];
                 updateDisplay();
-            };
+            });
 
-            document.getElementById('indicator-select').onchange = (e) => {
+            document.getElementById('indicator-select').addEventListener('change', (e) => {
                 state.selectedIndicator = INDICATORS[e.target.value];
                 updateDisplay();
-            };
+            });
 
             const sliders = [
-                { id: '酸-conc', key: 'Ca', unit: ' M' },
-                { id: '酸-vol', key: 'Va', unit: ' mL' },
+                { id: 'acid-conc', key: 'Ca', unit: ' M' },
+                { id: 'acid-vol', key: 'Va', unit: ' mL' },
                 { id: 'base-conc', key: 'Cb', unit: ' M' },
                 { id: 'titration-progress', key: 'progress', unit: '%' }
             ];
 
             sliders.forEach(s => {
                 const el = document.getElementById(s.id);
-                el.oninput = (e) => {
-                    const val = parseFloat(e.target.value);
-                    state[s.key] = val;
-                    const valDisplay = document.getElementById(s.id + '-val');
-                    if (valDisplay) valDisplay.textContent = val.toFixed(2) + s.unit;
-                    updateDisplay();
-                };
+                if (el) {
+                    el.oninput = (e) => {
+                        const val = parseFloat(e.target.value);
+                        state[s.key] = val;
+                        const valDisplay = document.getElementById(s.id + '-val');
+                        if (valDisplay) valDisplay.textContent = val.toFixed(2) + s.unit;
+                        updateDisplay();
+                    };
+                }
             });
 
             document.getElementById('reset-btn').onclick = () => {
@@ -858,6 +926,7 @@
             };
 
             // Initial view
+            renderLanguage();
             updateDisplay();
         };
     </script>
